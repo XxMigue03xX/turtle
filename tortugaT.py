@@ -32,6 +32,10 @@ ESTADO_INICIAL = 'q0'
 # Definir estados de aceptacion del automata
 ESTADOS_ACEPTADOS = {'q3'}
 
+# Definir valor de avance
+FRONTAL = 250
+DIAGONAL = FRONTAL**2
+
 # Definir ventana y tortuga
 ventana = turtle.Screen()
 ventana.title("Juego")
@@ -43,6 +47,9 @@ tortuga = turtle.Turtle()
 tortuga.shape("turtle")
 
 # Posición inicial
+tortuga.penup()
+tortuga.setpos(-140, 135)
+tortuga.pendown()
 # Orientación inicial
 tortuga.setheading(90)
 
