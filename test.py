@@ -7,12 +7,13 @@ from PIL import Image
 import tkinter as tk
 from tkinter import ttk
 
+# Obtener imagen y extraer su alto y ancho
 imagen = Image.open("./assets/Fondo.gif")
 ancho_imagen, alto_imagen = imagen.size
 
 # Definir el alfabeto del automata
-ALFABETO = ["arriba", "abajo", "izquierda", "derecha",
-            "diagonal-q", "diagonal-e", "diagonal-z", "diagonal-c", "cuadrado", "triangulo"]
+ALFABETO = ["arr", "abj", "izq", "der",
+            "d-q", "d-e", "d-z", "d-c", "cu", "t", "r", "ci"]
 
 # Direcciones diagonales (P es punto central):
 # Q E
@@ -21,29 +22,37 @@ ALFABETO = ["arriba", "abajo", "izquierda", "derecha",
 
 # Definir funcion de transicion del autómata
 F_TRANSICION = {
-    'q0': {'cuadrado': 'q1', 'triangulo': 'q9'},
-    'q1': {'derecha': 'q2', 'abajo': 'q6'},
-    'q2': {'abajo': 'q3'},
-    'q3': {'izquierda': 'q4'},
-    'q4': {'arriba': 'q5'},
+    'q0': {'cu': 'q1', 't': 'q9', 'r': 'q1', 'ci': 'q22'},
+    'q1': {'der': 'q2', 'abj': 'q6'},
+    'q2': {'abj': 'q3'},
+    'q3': {'izq': 'q4'},
+    'q4': {'arr': 'q5'},
     'q5': {},
-    'q6': {'derecha': 'q7'},
-    'q7': {'arriba': 'q8'},
-    'q8': {'izquierda': 'q5'},
-    'q9': {'derecha': 'q10', 'diagonal-c': 'q13'},
-    'q10': {'abajo': 'q11'},
-    'q11': {'diagonal-q': 'q12'},
-    'q12': {},
-    'q13': {'arriba': 'q14'},
-    'q14': {'izquierda': 'q12'},
+    'q6': {'der': 'q7'},
+    'q7': {'arr': 'q8'},
+    'q8': {'izq': 'q5'},
+    'q9': {'abj': 'q10', 'der':'q14', 'd-c': 'q18'},
+    'q10': {'der': 'q11', 'd-e': 'q12'},
+    'q11': {'d-q': 'q13'},
+    'q12': {'izq': 'q13'},
+    'q13': {},
+    'q14': {'abj': 'q15', 'd-z': 'q16'},
+    'q15': {'d-q': 'q17'},
+    'q16': {'arr': 'q17'},
+    'q17': {},
+    'q18': {'arr': 'q19', 'izq': 'q20'},
+    'q19': {'izq': 'q21'},
+    'q20': {'arr': 'q21'},
+    'q21': {},
+    'q22': {'der': 'q23', 'izq': 'q23'},
+    'q23': {}
 }
-
 
 # Definir estado inicial del automata
 ESTADO_INICIAL = 'q0'
 
 # Definir estados de aceptacion del automata
-ESTADOS_ACEPTADOS = {'q5', 'q12'}
+ESTADOS_ACEPTADOS = {'q5', 'q13', 'q17', 'q21', 'q23'}
 
 # Definir ventana y tortuga
 ventana = turtle.Screen()
@@ -55,68 +64,89 @@ tortuga = turtle.Turtle()
 tortuga.shape("turtle")
 
 # Posición inicial
-tortuga.penup()
-tortuga.setpos(-140, 135)
-tortuga.pendown()
+tortuga.penup() # Levantar lapiz
+tortuga.setpos(-140, 135) # Coordenadas x, y
+tortuga.pendown() # Bajar lapiz
 
 # Orientación inicial
-tortuga.setheading(90)
+tortuga.setheading(90) # 0 = =>
 
 # Definir valor de avance
 FRONTAL = 275
-DIAGONAL = math.sqrt((FRONTAL**2)*2)
+DIAGONAL = math.sqrt((FRONTAL**2)*2) # Calculo por el teorema de pitagoras
 
 # Definir las funciones de movimiento
-def adelante():
-    tortuga.forward(FRONTAL)
-def atras():
-    tortuga.backward(FRONTAL)
-def izquierda():
-    tortuga.setheading(180)
-    tortuga.forward(FRONTAL)
-    tortuga.setheading(90)
-def derecha():
+def adelante(distancia):
+    tortuga.forward(distancia)
+def atras(distancia):
+    tortuga.backward(distancia)
+def izquierda(distancia):
+    tortuga.setheading(180) # Girar
+    tortuga.forward(distancia) # Avanzar
+    tortuga.setheading(90) # Girar
+def derecha(distancia):
     tortuga.setheading(0)
-    tortuga.forward(FRONTAL)
+    tortuga.forward(distancia)
     tortuga.setheading(90)
-def diagonal_q():
+def diagonal_q(distancia):
     tortuga.setheading(135)
-    tortuga.forward(DIAGONAL)
+    tortuga.forward(distancia)
     tortuga.setheading(90)
-def diagonal_e():
+def diagonal_e(distancia):
     tortuga.setheading(45)
-    tortuga.forward(DIAGONAL)
+    tortuga.forward(distancia)
     tortuga.setheading(90)
-def diagonal_z():
+def diagonal_z(distancia):
     tortuga.setheading(225)
-    tortuga.forward(DIAGONAL)
+    tortuga.forward(distancia)
     tortuga.setheading(90)
-def diagonal_c():
+def diagonal_c(distancia):
     tortuga.setheading(315)
-    tortuga.forward(DIAGONAL)
+    tortuga.forward(distancia)
+    tortuga.setheading(90)
+def circulo_d(distancia):
+    tortuga.setheading(0)
+    tortuga.circle(-distancia) # Negativo para dirección de las manecillas del reloj
+    tortuga.setheading(90)
+def circulo_i(distancia):
+    tortuga.setheading(180)
+    tortuga.circle(distancia) # Positivo para la dirección contraria a las manecillas
     tortuga.setheading(90)
 
-def validar_alfabeto(array_cadena, ALfabeto):
+# Funcion de validación de alfabeto
+def validar_alfabeto(array_cadena, alfabeto):
+    # Por cada palabra ingresada
     for palabra in array_cadena:
-        if palabra.lower() not in ALfabeto:
+        # Ver si está en el alfabeto
+        if palabra.lower() not in alfabeto:
+            # Si no está, retornar falso y la palabra erronea
             return [False, palabra]
+    # Si si está, retornar true
     return [True]
 
 # Definir el automata
 def automata(alfabeto, f_transicion, estado_inicial, estados_finales, array_cadena):
+    # Verificar si la cadena ingresada pertenece al alfabeto
     pertenece = validar_alfabeto(array_cadena, alfabeto)[0]
     if (not pertenece):
+        # Si no pertenece emitir un mensaje de error y retornar falso
         palabra = validar_alfabeto(array_cadena, alfabeto)[1]
         print(f"La palabra '{palabra}' no pertenece al alfabeto")
         return False
+    # Si si pertenece empieza el recorrido en estado inicial
     estado_actual = estado_inicial
+    # Por cada palabra ingresada
     for palabra in array_cadena:
+        # Cambiar de estado segun la funcion de transición
         estado_actual = f_transicion[estado_actual].get(palabra.lower())
+        # Si lo ingresado no está en la funcion de transicion
         if estado_actual is None:
+            # Retornar falso porque no pertenece
             return False
-
+    # Retrornar booleano de pertencia del estado final en los estados de aceptación
     return estado_actual in estados_finales
 
+# Funcion para mostrar la tabla de la funcion de transicion
 def mostrar_tabla_transiciones(alfabeto, transiciones):
     # Crear la ventana principal
     ventana_tabla = tk.Tk()
@@ -165,27 +195,50 @@ def mostrar_tabla_transiciones(alfabeto, transiciones):
 
 # Definir movimiento asociado al alfabeto
 def mover_tortuga(cadena):
-    for palabra in cadena:
-        if palabra.lower() == "arriba":
-            adelante()
-        elif palabra.lower() == "abajo":
-            atras()
-        elif palabra.lower() == "izquierda":
-            izquierda()
-        elif palabra.lower() == "derecha":
-            derecha()
-        elif palabra.lower() == "diagonal-q":
-            diagonal_q()
-        elif palabra.lower() == "diagonal-e":
-            diagonal_e()
-        elif palabra.lower() == "diagonal-z":
-            diagonal_z()
-        elif palabra.lower() == "diagonal-c":
-            diagonal_c()
-
+    # Si rectangulo
+    if cadena[0].lower() == "r":
+        for palabra in cadena:
+            if palabra.lower() == "arr":
+                adelante(FRONTAL/2)
+            elif palabra.lower() == "abj":
+                atras(FRONTAL/2)
+            elif palabra.lower() == "izq":
+                izquierda(FRONTAL)
+            elif palabra.lower() == "der":
+                derecha(FRONTAL)
+    # Si circulo
+    elif cadena[0].lower() == "ci":
+        tortuga.penup()
+        tortuga.setpos(0, 135)
+        tortuga.pendown()
+        for palabra in cadena:
+            if palabra.lower() == "der":
+                circulo_d(FRONTAL/2)
+            elif palabra.lower() == "izq":
+                circulo_i(FRONTAL/2)
+    # Cuadrado y triangulo
+    else:
+        for palabra in cadena:
+            if palabra.lower() == "arr":
+                adelante(FRONTAL)
+            elif palabra.lower() == "abj":
+                atras(FRONTAL)
+            elif palabra.lower() == "izq":
+                izquierda(FRONTAL)
+            elif palabra.lower() == "der":
+                derecha(FRONTAL)
+            elif palabra.lower() == "d-q":
+                diagonal_q(DIAGONAL)
+            elif palabra.lower() == "d-e":
+                diagonal_e(DIAGONAL)
+            elif palabra.lower() == "d-z":
+                diagonal_z(DIAGONAL)
+            elif palabra.lower() == "d-c":
+                diagonal_c(DIAGONAL)
 
 # Solicitar cadena de entrada
-cadena_entrada = input("Ingresa una cadena para el automata tortuga: ")
+cadena_entrada = ventana.textinput("AUTOMATA", "Ingresa una cadena para el automata tortuga: ")
+# Convertir cadena de entrada a array de palabras
 array_cadena = cadena_entrada.split(" ")
 
 # Ejecutar el autómata
@@ -199,6 +252,7 @@ else:
     
 # Crear un grafo dirigido
 G = nx.DiGraph()
+# G = nx.MultiDiGraph()
 
 # Agregar nodos (estados) y asignarles el atributo 'subset'
 # Aquí, 'subset' define la capa a la que pertenece el nodo.
@@ -215,9 +269,18 @@ subset_map = {
     'q9': 1,
     'q10': 2,
     'q11': 3,
-    'q12': 5,
-    'q13': 3,
-    'q14': 4
+    'q12': 3,
+    'q13': 4,
+    'q14': 2,
+    'q15': 3,
+    'q16': 3,
+    'q17': 4,
+    'q18': 2,
+    'q19': 3,
+    'q20': 3,
+    'q21': 4,
+    'q22': 1,
+    'q23': 2
 }
 
 for state in F_TRANSICION:
@@ -241,10 +304,8 @@ edge_labels = nx.get_edge_attributes(G, 'label')
 nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=8)
 
 # Resaltar estado inicial y estados de aceptación
-estado_inicial = 'q0'
-estados_finales = {'q5', 'q12'}
-nx.draw_networkx_nodes(G, pos, nodelist=[estado_inicial], node_color='green', node_size=1200)
-nx.draw_networkx_nodes(G, pos, nodelist=estados_finales, node_color='red', node_size=1200)
+nx.draw_networkx_nodes(G, pos, nodelist=[ESTADO_INICIAL], node_color='green', node_size=1200)
+nx.draw_networkx_nodes(G, pos, nodelist=ESTADOS_ACEPTADOS, node_color='red', node_size=1200)
 
 # Título del grafo
 plt.title("Diagrama de Estados del Autómata", fontsize=15)
@@ -255,5 +316,5 @@ plt.axis('off')
 # Mostrar grafo
 plt.show()
 
-# mostrar tabla de transiciones
+# Mostrar tabla de transiciones
 mostrar_tabla_transiciones(ALFABETO, F_TRANSICION)
