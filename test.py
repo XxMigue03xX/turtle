@@ -1,3 +1,11 @@
+# Instalacion de librerias
+# Estas son las librerias que se deben instalar para correr el programa
+# pip install matplotlib
+# pip install networkx
+# pip install pillow
+
+# las demas librerias usadas en el codigo, están instaladas por defecto con Python.
+
 # Importar librerias
 import math
 import turtle
@@ -7,14 +15,12 @@ from PIL import Image
 import tkinter as tk
 from tkinter import ttk
 
-# Obtener imagen y extraer su alto y ancho
 imagen = Image.open("./assets/Fondo.gif")
 ancho_imagen, alto_imagen = imagen.size
 
 # Definir el alfabeto del automata
 ALFABETO = ["arr", "abj", "izq", "der",
             "d-q", "d-e", "d-z", "d-c", "cu", "t", "r", "ci"]
-
 # Direcciones diagonales (P es punto central):
 # Q E
 #  P
@@ -64,16 +70,16 @@ tortuga = turtle.Turtle()
 tortuga.shape("turtle")
 
 # Posición inicial
-tortuga.penup() # Levantar lapiz
-tortuga.setpos(-140, 135) # Coordenadas x, y
-tortuga.pendown() # Bajar lapiz
+tortuga.penup()
+tortuga.setpos(-140, 135)
+tortuga.pendown()
 
 # Orientación inicial
-tortuga.setheading(90) # 0 = =>
+tortuga.setheading(90)
 
 # Definir valor de avance
 FRONTAL = 275
-DIAGONAL = math.sqrt((FRONTAL**2)*2) # Calculo por el teorema de pitagoras
+DIAGONAL = math.sqrt((FRONTAL**2)*2)
 
 # Definir las funciones de movimiento
 def adelante(distancia):
@@ -113,41 +119,35 @@ def circulo_i(distancia):
     tortuga.circle(distancia) # Positivo para la dirección contraria a las manecillas
     tortuga.setheading(90)
 
-# Funcion de validación de alfabeto
-def validar_alfabeto(array_cadena, alfabeto):
-    # Por cada palabra ingresada
+
+def validar_alfabeto(array_cadena, ALfabeto):
     for palabra in array_cadena:
-        # Ver si está en el alfabeto
-        if palabra.lower() not in alfabeto:
-            # Si no está, retornar falso y la palabra erronea
+        if palabra.lower() not in ALfabeto:
             return [False, palabra]
-    # Si si está, retornar true
     return [True]
 
 # Definir el automata
 def automata(alfabeto, f_transicion, estado_inicial, estados_finales, array_cadena):
-    # Verificar si la cadena ingresada pertenece al alfabeto
     pertenece = validar_alfabeto(array_cadena, alfabeto)[0]
-    if (not pertenece):
-        # Si no pertenece emitir un mensaje de error y retornar falso
+    estados_visitados = []
+    
+    if not pertenece:
         palabra = validar_alfabeto(array_cadena, alfabeto)[1]
         print(f"La palabra '{palabra}' no pertenece al alfabeto")
-        return False
-    # Si si pertenece empieza el recorrido en estado inicial
-    estado_actual = estado_inicial
-    # Por cada palabra ingresada
-    for palabra in array_cadena:
-        # Cambiar de estado segun la funcion de transición
-        estado_actual = f_transicion[estado_actual].get(palabra.lower())
-        # Si lo ingresado no está en la funcion de transicion
-        if estado_actual is None:
-            # Retornar falso porque no pertenece
-            return False
-    # Retrornar booleano de pertencia del estado final en los estados de aceptación
-    return estado_actual in estados_finales
+        return False, estados_visitados
 
-# Funcion para mostrar la tabla de la funcion de transicion
-def mostrar_tabla_transiciones(alfabeto, transiciones):
+    estado_actual = estado_inicial
+    estados_visitados.append(estado_actual)  
+    
+    for palabra in array_cadena:
+        estado_actual = f_transicion[estado_actual].get(palabra.lower())
+        if estado_actual is None:
+            return False, estados_visitados
+        estados_visitados.append(estado_actual)  
+
+    return estado_actual in estados_finales, estados_visitados
+
+def mostrar_tabla_transiciones(alfabeto, transiciones, estados_visitados):
     # Crear la ventana principal
     ventana_tabla = tk.Tk()
     ventana_tabla.title("Tabla de Transiciones del Autómata")
@@ -165,7 +165,7 @@ def mostrar_tabla_transiciones(alfabeto, transiciones):
     # Definir los encabezados de las columnas
     for columna in columnas:
         tree.heading(columna, text=columna)
-        tree.column(columna, width=100, anchor='center')  # Ajustar ancho y alineación
+        tree.column(columna, width=100, anchor='center')
 
     # Llenar la tabla con las transiciones
     for idx, estado in enumerate(transiciones.keys()):
@@ -175,14 +175,28 @@ def mostrar_tabla_transiciones(alfabeto, transiciones):
             fila.append(siguiente_estado)
         
         # Alternar colores de las filas
-        if idx % 2 == 0:
+        if estado in estados_visitados:
+            tree.insert('', 'end', values=fila, tags=('highlighted',))
+        elif idx % 2 == 0:
             tree.insert('', 'end', values=fila, tags=('evenrow',))
         else:
             tree.insert('', 'end', values=fila, tags=('oddrow',))
     
     # Estilo para filas alternas
+    tree.tag_configure('highlighted', background='lightgreen')
     tree.tag_configure('evenrow', background='lightgrey')
     tree.tag_configure('oddrow', background='white')
+
+    # Aplicar color verde a las celdas de los estados visitados
+    def resaltar_estado_visitado(event):
+        item = tree.identify_row(event.y)
+        if item:
+            row_values = tree.item(item, 'values')
+            estado = row_values[0]
+            if estado in estados_visitados:
+                tree.tag_configure(item, background='lightgreen')
+    
+    tree.bind('<Motion>', resaltar_estado_visitado)
 
     # Empaquetar la tabla y mostrar la ventana
     tree.pack(expand=True, fill='both', padx=10, pady=10)
@@ -236,13 +250,16 @@ def mover_tortuga(cadena):
             elif palabra.lower() == "d-c":
                 diagonal_c(DIAGONAL)
 
+
+
 # Solicitar cadena de entrada
 cadena_entrada = ventana.textinput("AUTOMATA", "Ingresa una cadena para el automata tortuga: ")
-# Convertir cadena de entrada a array de palabras
 array_cadena = cadena_entrada.split(" ")
 
 # Ejecutar el autómata
-if automata(ALFABETO, F_TRANSICION, ESTADO_INICIAL, ESTADOS_ACEPTADOS, array_cadena):
+pertenece, estados_visitados = automata(ALFABETO, F_TRANSICION, ESTADO_INICIAL, ESTADOS_ACEPTADOS, array_cadena)
+
+if pertenece:
     print("Pertenece")
     # Mover tortuga si la cadena ha sido aceptada
     mover_tortuga(array_cadena)
@@ -251,8 +268,7 @@ else:
     print("No pertenece")
     
 # Crear un grafo dirigido
-G = nx.DiGraph()
-# G = nx.MultiDiGraph()
+G = nx.MultiDiGraph()
 
 # Agregar nodos (estados) y asignarles el atributo 'subset'
 # Aquí, 'subset' define la capa a la que pertenece el nodo.
@@ -289,23 +305,69 @@ for state in F_TRANSICION:
 # Agregar aristas (transiciones)
 for from_state, transitions_dict in F_TRANSICION.items():
     for symbol, to_state in transitions_dict.items():
-        G.add_edge(from_state, to_state, label=symbol)
+        if from_state == 'q0' and to_state == 'q1':
+            continue
+        else:
+            if symbol != 'cuadrado' or 'rectangulo':
+                G.add_edge(from_state, to_state, label=symbol)
 
+# Agregar manualmente una arista curva para 'cuadrado, rectangulo' y 'circulo'
+G.add_edge('q0', 'q1', label='r/cu', key='r/cu', connectionstyle="arc3,rad=0.5")
+G.add_edge('q22', 'q23', label='izq/der', key='izq/der', connectionstyle="arc3,rad=0.5")
 # Posicionar los nodos utilizando el layout multipartite
 pos = nx.multipartite_layout(G, subset_key="subset")
 
 # Dibujar el grafo
 nx.draw_networkx_nodes(G, pos, node_size=1000, node_color='lightblue', edgecolors='black')
-nx.draw_networkx_edges(G, pos, arrowstyle='->', arrowsize=20, edge_color='gray')
-nx.draw_networkx_labels(G, pos, font_size=10, font_family='sans-serif', font_weight='bold')
 
-# Dibujar etiquetas de las aristas
-edge_labels = nx.get_edge_attributes(G, 'label')
+
+# Dibujar la arista de "rectangulo" (arco por arriba)
+nx.draw_networkx_edges(
+    G, pos, edgelist=[(u, v) for u, v, d in G.edges(data=True) if d.get('label') == 'r/cu'],
+    connectionstyle="arc3,rad=-0.5", arrowstyle='->', arrowsize=20, edge_color='gray'
+)
+
+# Dibujar la arista de "circulo" (arco por abajo)
+nx.draw_networkx_edges(
+    G, pos, edgelist=[(u, v) for u, v, d in G.edges(data=True) if d.get('label') == 'izq/der'],
+    connectionstyle="arc3,rad=0.5", arrowstyle='->', arrowsize=20, edge_color='gray'
+)
+
+# Crear un diccionario de posiciones para las etiquetas
+# Establecer una posición fija para la etiqueta 'cuadrado/rectangulo'
+edge_labels = {('q0', 'q1'): 'r/cu'}
+edge_labels.update({(u, v): f"{d['label']}" for u, v, d in G.edges(data=True) if (u, v) != ('q0', 'q1') and ('q22', 'q23')})
+
+# Establecer una posición fija para la etiqueta 'circulo'
+edge_labels = {('q22', 'q23'): 'der/izq'}
+edge_labels.update({(u, v): f"{d['label']}" for u, v, d in G.edges(data=True) if (u, v) != ('q22', 'q23') and ('q22', 'q23')})
+
+# Crear una copia de la posición para ajustar las etiquetas
+pos_labels = pos.copy()
+
+# Dibujar el resto de las aristas con estilo predeterminado
+nx.draw_networkx_edges(G, pos, arrowstyle='->', arrowsize=20, edge_color='gray')
+
+# Dibujar las etiquetas de las demás aristas de manera normal
+edge_labels.update({(u, v): f"{d['label']}" for u, v, d in G.edges(data=True) if (u, v) != ('q0', 'q1') and ('q22', 'q23')})
 nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_size=8)
 
 # Resaltar estado inicial y estados de aceptación
 nx.draw_networkx_nodes(G, pos, nodelist=[ESTADO_INICIAL], node_color='green', node_size=1200)
 nx.draw_networkx_nodes(G, pos, nodelist=ESTADOS_ACEPTADOS, node_color='red', node_size=1200)
+
+# Definir los estados visitados que no son ni el estado inicial ni los estados finales
+nodos_visitados = [estado for estado in estados_visitados if estado != ESTADO_INICIAL and estado not in ESTADOS_ACEPTADOS]
+
+# Definir el estado final de este automata
+nodo_final = [estado for estado in ESTADOS_ACEPTADOS if estado in estados_visitados]
+
+# Repintar nodos visitados en color naranja y estado de aceptación final de morado
+nx.draw_networkx_nodes(G, pos, nodelist=nodos_visitados, node_color='orange', node_size=1300)
+nx.draw_networkx_nodes(G, pos, nodelist=nodo_final, node_color='purple', node_size=1400)
+
+# Dibujar etiquetas de los nodos
+nx.draw_networkx_labels(G, pos, font_size=10, font_family='sans-serif', font_weight='bold')
 
 # Título del grafo
 plt.title("Diagrama de Estados del Autómata", fontsize=15)
@@ -316,5 +378,5 @@ plt.axis('off')
 # Mostrar grafo
 plt.show()
 
-# Mostrar tabla de transiciones
-mostrar_tabla_transiciones(ALFABETO, F_TRANSICION)
+# mostrar tabla de transiciones
+mostrar_tabla_transiciones(ALFABETO, F_TRANSICION, estados_visitados)
