@@ -63,16 +63,16 @@ ESTADOS_ACEPTADOS = {'q5', 'q13', 'q17', 'q21', 'q23'}
 # Definir ventana y tortuga
 ventana = turtle.Screen()
 ventana.title("Juego")
-ventana.setup(width=ancho_imagen, height=alto_imagen)
-ventana.cv.master.resizable(False, False)
+ventana.setup(width=ancho_imagen, height=alto_imagen) # Tamaño de imagen
+ventana.cv.master.resizable(False, False) # Tamaño fijo
 ventana.bgpic("./assets/Fondo.gif")
 tortuga = turtle.Turtle()
 tortuga.shape("turtle")
 
 # Posición inicial
-tortuga.penup()
-tortuga.setpos(-140, 135)
-tortuga.pendown()
+tortuga.penup() # Levantar laipz
+tortuga.setpos(-140, 135) # Mover
+tortuga.pendown() # Bajar lapiz
 
 # Orientación inicial
 tortuga.setheading(90)
@@ -120,10 +120,14 @@ def circulo_i(distancia):
     tortuga.setheading(90)
 
 
-def validar_alfabeto(array_cadena, ALfabeto):
+def validar_alfabeto(array_cadena, alfabeto):
+    # Por palabra en cadena de entrada
     for palabra in array_cadena:
-        if palabra.lower() not in ALfabeto:
+        # Si no pertenece al alfabeto
+        if palabra.lower() not in alfabeto:
+            # Retorna falso y la palabra errada
             return [False, palabra]
+    # Si pertenece retorna verdadero
     return [True]
 
 # Definir el automata
@@ -131,20 +135,30 @@ def automata(alfabeto, f_transicion, estado_inicial, estados_finales, array_cade
     pertenece = validar_alfabeto(array_cadena, alfabeto)[0]
     estados_visitados = []
     
+    # Si la cadena no pertenece al alfabeto
     if not pertenece:
+        # Mostrar mensaje de error y retornar falso
         palabra = validar_alfabeto(array_cadena, alfabeto)[1]
         print(f"La palabra '{palabra}' no pertenece al alfabeto")
         return False, estados_visitados
 
+    # Si la cadena pertenece se empieza la ejecución del automata
     estado_actual = estado_inicial
+    # Se guardan los estados visitados
     estados_visitados.append(estado_actual)  
     
+    # Por palabra en la cadena de entrada
     for palabra in array_cadena:
+        # Se cambia de estado segun la funcion de transicion para esa palabra
         estado_actual = f_transicion[estado_actual].get(palabra.lower())
+        # Si no hay estado para esa palabra
         if estado_actual is None:
+            # Se retorna falso, no pertenece al automata
             return False, estados_visitados
+        # Si hay estado se añade a los visitados
         estados_visitados.append(estado_actual)  
 
+    # Se retorna booleano de aceptacion y estados visitados
     return estado_actual in estados_finales, estados_visitados
 
 def mostrar_tabla_transiciones(alfabeto, transiciones, estados_visitados):
@@ -250,24 +264,23 @@ def mover_tortuga(cadena):
             elif palabra.lower() == "d-c":
                 diagonal_c(DIAGONAL)
 
-
-
 # Solicitar cadena de entrada
 cadena_entrada = ventana.textinput("AUTOMATA", "Ingresa una cadena para el automata tortuga: ")
+# Convertir cadena en array de palabras
 array_cadena = cadena_entrada.split(" ")
 
 # Ejecutar el autómata
 pertenece, estados_visitados = automata(ALFABETO, F_TRANSICION, ESTADO_INICIAL, ESTADOS_ACEPTADOS, array_cadena)
 
 if pertenece:
-    print("Pertenece")
+    print("Pertenece al automata")
     # Mover tortuga si la cadena ha sido aceptada
     mover_tortuga(array_cadena)
     turtle.done()
 else:
-    print("No pertenece")
+    print("No pertenece al automata")
     
-# Crear un grafo dirigido
+# Crear un grafo multi dirigido
 G = nx.MultiDiGraph()
 
 # Agregar nodos (estados) y asignarles el atributo 'subset'
@@ -299,7 +312,9 @@ subset_map = {
     'q23': 2
 }
 
+# Por cada estado de la f de transicion
 for state in F_TRANSICION:
+    # Se añade un nodo con su subset respectivo
     G.add_node(state, subset=subset_map[state])
 
 # Agregar aristas (transiciones)
